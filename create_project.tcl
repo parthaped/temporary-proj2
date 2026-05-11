@@ -2,15 +2,21 @@
 # create_project.tcl
 #
 # One-shot Vivado Tcl that creates a project for the original Zybo (rev B,
-# xc7z010clg400-1), adds every RTL/sim source under EmbeddedFinal/, builds
-# a block design (`scope_bd`) using module references for each entity, wires
-# everything per the cross-module audit, stubs the joystick path with
-# xlconstant IPs, generates the BD wrapper, and sets it as the top.
+# xc7z010clg400-1), adds every RTL/sim source under EmbeddedFinal/, and uses
+# the IP Integrator to build a block design (`scope_bd`): one module-reference
+# cell per RTL entity, joystick stubs as xlconstant IPs, every cross-module
+# connection from the audit, all external BD ports created, validated, and
+# saved.
+#
+# The HDL wrapper is intentionally NOT generated here. After this script
+# finishes, do it manually in Vivado:
+#   Sources panel -> right-click scope_bd.bd -> Create HDL Wrapper -> "Let
+#   Vivado manage wrapper and auto-update" -> OK.
+# Then Flow Navigator -> Generate Bitstream.
 #
 # Usage from Vivado Tcl Console:
 #     cd C:/Users/Parth/royce-embed
 #     source ./create_project.tcl
-# Then open scope_bd, sanity-check, and Generate Bitstream from Flow Navigator.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -221,35 +227,23 @@ connect_bd_net [get_bd_pins jstk_tick_const/dout] [get_bd_pins pixel_pusher_i/js
 #  LED later if you want a visible heartbeat.)
 
 # -----------------------------------------------------------------------------
-# 8. Validate, save, generate wrapper, set top
+# 8. Validate and save the block design
+#    (HDL wrapper generation is intentionally left to you - see header.)
 # -----------------------------------------------------------------------------
 regenerate_bd_layout
 validate_bd_design
 save_bd_design
 
-set bd_file [get_files ${bd_name}.bd]
-make_wrapper -files $bd_file -top
-
-set wrapper_glob [file join $project_dir "${project_name}.gen" "sources_1" "bd" $bd_name "hdl" "${bd_name}_wrapper.vhd"]
-set wrapper_files [glob -nocomplain $wrapper_glob]
-if {[llength $wrapper_files] == 0} {
-    # Older Vivado layouts put it under .srcs instead of .gen
-    set wrapper_glob [file join $project_dir "${project_name}.srcs" "sources_1" "bd" $bd_name "hdl" "${bd_name}_wrapper.vhd"]
-    set wrapper_files [glob -nocomplain $wrapper_glob]
-}
-if {[llength $wrapper_files] == 0} {
-    error "Could not locate generated wrapper file at $wrapper_glob"
-}
-add_files -norecurse $wrapper_files
-set_property top ${bd_name}_wrapper [current_fileset]
-update_compile_order -fileset sources_1
-
 puts "============================================================"
-puts "INFO: Project setup complete."
+puts "INFO: IP Integrator block design built and saved."
 puts "      BD       : $bd_name"
-puts "      Top      : ${bd_name}_wrapper"
 puts "      Part     : $part_name"
 puts "      Project  : $project_dir"
-puts "Open the block design, sanity-check, then Generate Bitstream"
-puts "from the Flow Navigator."
+puts ""
+puts "NEXT STEPS (do these in the Vivado GUI):"
+puts "  1. Sources panel -> right-click ${bd_name}.bd"
+puts "     -> Create HDL Wrapper..."
+puts "     -> 'Let Vivado manage wrapper and auto-update' -> OK"
+puts "  2. The wrapper becomes the top automatically."
+puts "  3. Flow Navigator -> Generate Bitstream."
 puts "============================================================"
