@@ -1,0 +1,25 @@
+# Vivado project output / scratch
+vivado_project/
+*.cache/
+*.hw/
+*.sim/
+*.runs/
+*.gen/
+.Xil/
+
+# Vivado logs and journal
+*.jou
+*.log
+*.str
+*.pb
+*.wdb
+*.zip
+
+# Vivado backup files
+*.backup.*
+*.bak
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*~
